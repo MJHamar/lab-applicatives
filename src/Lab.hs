@@ -4,7 +4,6 @@
 --------------------------------------------------------------------------------
 
 module Lab where
-
 import Data.Char
 import Data.Maybe
 
@@ -22,27 +21,35 @@ parse (MkParser f) xs = f xs
 -- if the first character in the input satisfies the predicate.
 ch :: (Char -> Bool) -> Parser Char
 ch p = MkParser $ \xs -> case xs of
-    (y:ys) | p y -> undefined
-    _            -> undefined
+    (y:ys) | p y -> Just (y,ys)
+    otherwise    -> Nothing
 
 --------------------------------------------------------------------------------
 -- Parsers are functors
 
 instance Functor Parser where
-    fmap f (MkParser g) =
-        MkParser $ \xs -> undefined
+    -- g :: \String -> (a, String)
+    -- Parser a = MkParser (String -> Maybe (a, String))
+    -- f :: a -> b
+    -- p :: (a, String) -> (b, String)
+    -- fmap :: (a -> b) -> Parser a -> Parser b
+    fmap f (MkParser g) =  MkParser $ \xs -> p <$> g xs 
+        where 
+            p (s, ys) = (f s, ys)
 
 --------------------------------------------------------------------------------
 -- Parsers are applicative functors
 
 instance Applicative Parser where
-    pure x = undefined
-
-    (MkParser a) <*> p = MkParser (\xs -> case a xs of
-        Nothing      -> undefined
+    pure x = MkParser $ \xs -> Just (x, xs)
+    -- a :: (a -> b)
+    -- p :: Parser a 
+    -- <*> :: Parser (a -> b) -> Parser a -> Parser b
+    (MkParser a) <*> p = MkParser $ \xs -> case a xs of
+        Nothing      -> Nothing 
         Just (f, ys) -> let (MkParser b) = p in case b ys of
-            Nothing      -> undefined
-            Just (x, zs) -> undefined)
+            Nothing      -> Nothing
+            Just (x, zs) -> Just (f x, zs)
 
 --------------------------------------------------------------------------------
 -- Alternative
